@@ -18,18 +18,11 @@ form.addEventListener('submit', createGallery);
 function createGallery(event) {
   event.preventDefault();
   loader.style.display = 'block';
+
   const textInput = event.target.elements.text.value.trim();
 
-  if (textInput === '') {
-    iziToast.error({
-      iconUrl: iconError,
-      position: 'topRight',
-      backgroundColor: '#EF4040',
-      iconColor: '#FAFAFB',
-      imageWidth: 24,
-      messageColor: '#FAFAFB',
-      message: 'Please write a query for search',
-    });
+  if (!textInput) {
+    showError('Please write a query for search');
     loader.style.display = 'none';
     gallery.innerHTML = '';
     return;
@@ -38,49 +31,55 @@ function createGallery(event) {
   searchImages(textInput)
     .then(data => {
       loader.style.display = 'none';
+
       if (data.hits.length === 0) {
-        iziToast.error({
-          iconUrl: iconError,
-          position: 'topRight',
-          backgroundColor: '#EF4040',
-          iconColor: '#FAFAFB',
-          imageWidth: 24,
-          messageColor: '#FAFAFB',
-          message:
-            'Sorry, there are no images matching your search query. Please try again!',
-        });
-        loader.style.display = 'none';
+        showError(
+          'Sorry, there are no images matching your search query. Please try again!'
+        );
         gallery.innerHTML = '';
+        return;
       }
 
-      const markup = createMarkup(data.hits);
-      gallery.innerHTML = markup;
-    })
-    .then(data => {
-      let galleryImgs = new SimpleLightbox('.gallery a', {
-        captions: true,
-        captionSelector: 'img',
-        captionType: 'attr',
-        captionsData: 'alt',
-        captionPosition: 'bottom',
-        captionClass: '',
-        captionHTML: true,
-        captionClass: 'captions',
-        animationSpeed: '250',
-        className: 'simpl-lightbox',
-      });
-      galleryImgs.refresh();
+      renderGallery(data.hits);
+      initLightbox();
     })
     .catch(error => {
-      iziToast.error({
-        iconUrl: iconError,
-        position: 'topRight',
-        backgroundColor: '#EF4040',
-        iconColor: '#FAFAFB',
-        imageWidth: 24,
-        messageColor: '#FAFAFB',
-        message: error,
-      });
+      const errorMessage =
+        error.message ||
+        'An unexpected error occurred. Please try again later.';
+      showError(errorMessage);
     })
-    .finally(() => event.target.reset());
+    .finally(() => {
+      loader.style.display = 'none';
+      event.target.reset();
+    });
+}
+
+function showError(message) {
+  iziToast.error({
+    iconUrl: iconError,
+    position: 'topRight',
+    backgroundColor: '#EF4040',
+    iconColor: '#FAFAFB',
+    imageWidth: 24,
+    messageColor: '#FAFAFB',
+    message: message,
+  });
+}
+
+function renderGallery(images) {
+  const markup = createMarkup(images);
+  gallery.innerHTML = markup;
+}
+
+function initLightbox() {
+  new SimpleLightbox('.gallery a', {
+    captions: true,
+    captionSelector: 'img',
+    captionType: 'attr',
+    captionsData: 'alt',
+    captionPosition: 'bottom',
+    animationSpeed: 250,
+    className: 'simpl-lightbox',
+  }).refresh();
 }
